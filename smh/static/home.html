@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 1rem;
+        }
+
+        .model-selector {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .model-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            padding: 0;
+            border: 2px solid transparent;
+            background: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .model-button img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .model-button.active {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+        }
+
+        .model-button:hover {
+            transform: scale(1.1);
+        }
+
+        .model-label {
+            font-size: 12px;
+            text-align: center;
+            margin-top: 4px;
+            color: #666;
+        }
+
+        .chat-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            display: flex;
+            gap: 20px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .message.user {
+            background-color: #f7f7f8;
+        }
+
+        .message.assistant {
+            background-color: #ffffff;
+        }
+
+        .message-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .message-content {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        .message-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: none;
+        }
+
+        .message:hover .message-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .copy-button {
+            background: none;
+            border: none;
+            color: #6e6e80;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .copy-button:hover {
+            color: #000;
+        }
+
+        .input-area {
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+            padding: 20px;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .message-input {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            resize: none;
+            min-height: 52px;
+            max-height: 200px;
+            font-family: inherit;
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .send-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="model-selector">
+            <div class="model-button-container">
+                <button class="model-button active" data-model="meta">
+                    <img src="/static/image/meta.png" alt="Meta LLM">
+                </button>
+                <div class="model-label">Meta LLM</div>
+            </div>
+            <div class="model-button-container">
+                <button class="model-button" data-model="claude">
+                    <img src="/static/image/claude.png" alt="Claude">
+                </button>
+                <div class="model-label">Claude</div>
+            </div>
+            <div class="model-button-container">
+                <button class="model-button" data-model="gemini">
+                    <img src="/static/image/gemini.png" alt="Gemini">
+                </button>
+                <div class="model-label">Gemini</div>
+            </div>
+            <div class="model-button-container">
+                <button class="model-button" data-model="gpt4">
+                    <img src="/static/image/chatgpt.jpg" alt="ChatGPT">
+                </button>
+                <div class="model-label">ChatGPT</div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+            <!-- Messages will be inserted here -->
+        </div>
+    </div>
+
+    <div class="input-area">
+        <div class="input-container">
+            <textarea class="message-input" id="message-input" placeholder="메시지를 입력하세요..." rows="1"></textarea>
+            <button class="send-button" id="send-button">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const modelButtons = document.querySelectorAll('.model-button');
+        let currentModel = 'meta';
+
+        let currentAssistantMessage = null;
+        const ws = new WebSocket('ws://localhost:8000/ws');
+
+        // WebSocket event handlers
+        ws.onopen = () => console.log('Connected to server');
+        ws.onclose = () => console.log('Disconnected from server');
+        ws.onerror = (error) => console.error('WebSocket error:', error);
+
+        // Handle incoming messages
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+
+            if (message.type === 'assistant') {
+                if (message.streaming) {
+                    handleStreamingMessage(message);
+                } else {
+                    finalizeAssistantMessage();
+                }
+            }
+        };
+
+        // 메시지 버퍼링 추가
+        let messageBuffer = '';
+        const MESSAGE_BUFFER_INTERVAL = 50; // 50ms마다 업데이트
+
+        function handleStreamingMessage(message) {
+            if (!currentAssistantMessage) {
+                currentAssistantMessage = createMessageElement('assistant');
+                chatMessages.appendChild(currentAssistantMessage);
+            }
+
+            messageBuffer += message.content;
+
+            // 주기적으로 버퍼 내용 업데이트
+            if (!currentAssistantMessage.updateTimer) {
+                currentAssistantMessage.updateTimer = setInterval(() => {
+                    if (messageBuffer) {
+                        const contentElement = currentAssistantMessage.querySelector('.message-content');
+                        if (contentElement) {
+                            contentElement.textContent += messageBuffer;
+                            messageBuffer = '';
+                            chatMessages.scrollTop = chatMessages.scrollHeight;
+                        }
+                    }
+                }, MESSAGE_BUFFER_INTERVAL);
+            }
+        }
+
+        function finalizeAssistantMessage() {
+            if (currentAssistantMessage) {
+                // 타이머 정리
+                if (currentAssistantMessage.updateTimer) {
+                    clearInterval(currentAssistantMessage.updateTimer);
+                    currentAssistantMessage.updateTimer = null;
+                }
+                // 남은 버퍼 처리
+                if (messageBuffer) {
+                    const contentElement = currentAssistantMessage.querySelector('.message-content');
+                    if (contentElement) {
+                        contentElement.textContent += messageBuffer;
+                        messageBuffer = '';
+                    }
+                }
+                addCopyButton(currentAssistantMessage);
+                currentAssistantMessage = null;
+            }
+        }
+
+        function createMessageElement(type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.innerHTML = type === 'assistant' ?
+                '<i class="fas fa-robot"></i>' :
+                '<i class="fas fa-user"></i>';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+
+            return messageDiv;
+        }
+
+        function addCopyButton(messageElement) {
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-button';
+            copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+            copyButton.onclick = () => {
+                const content = messageElement.querySelector('.message-content').textContent;
+                navigator.clipboard.writeText(content)
+                    .then(() => {
+                        copyButton.innerHTML = '<i class="fas fa-check"></i>';
+                        setTimeout(() => {
+                            copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+                        }, 2000);
+                    });
+            };
+
+            actions.appendChild(copyButton);
+            messageElement.querySelector('.message-content').appendChild(actions);
+        }
+
+        // Send message function
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message && ws.readyState === WebSocket.OPEN) {
+                // Create and append user message
+                const messageElement = createMessageElement('user');
+                messageElement.querySelector('.message-content').textContent = message;
+                chatMessages.appendChild(messageElement);
+
+                // Send to server
+                ws.send(JSON.stringify({
+                    content: message,
+                    model: currentModel
+                }));
+
+                // Clear input
+                messageInput.value = '';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        messageInput.addEventListener('input', () => {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = messageInput.scrollHeight + 'px';
+        });
+
+        // Model selection handling
+        modelButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                modelButtons.forEach(btn => btn.classList.remove('active'));
+                // Add active class to clicked button
+                button.classList.add('active');
+                // Update current model
+                currentModel = button.dataset.model;
+            });
+        });
+    </script>
+</body>
+
+</html>
