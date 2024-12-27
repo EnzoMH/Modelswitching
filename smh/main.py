@@ -125,7 +125,7 @@ async def read_root():
 # API 클라이언트 초기화
 
 # 모델 경로 설정
-MODEL_PATH = r"C:\Users\qksso\smh\llama-korean\llama-3.2-Korean-Bllossom-3B-gguf-Q4_K_M.gguf"
+MODEL_PATH = r""
 
 # 토크나이저 초기화를 전역으로 이동하고 캐싱
 tokenizer = None
